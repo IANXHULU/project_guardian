@@ -1,0 +1,920 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Guardian | Operations Dashboard</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    :root {
+      --bg: #f5f7fb;
+      --surface: #ffffff;
+      --ink: #101828;
+      --muted: #667085;
+      --line: #e4e7ec;
+      --brand: #1d4ed8;
+      --nav: #0f172a;
+      --success: #027a48;
+      --success-bg: #ecfdf3;
+      --warn: #b54708;
+      --warn-bg: #fffaeb;
+      --danger: #b42318;
+      --danger-bg: #fef3f2;
+      --critical-bg: #fee2e2;
+      --critical-text: #991b1b;
+      --high-bg: #ffedd5;
+      --high-text: #9a3412;
+      --medium-bg: #fef9c3;
+      --medium-text: #854d0e;
+      --low-bg: #dcfce7;
+      --low-text: #166534;
+      --shadow: 0 14px 36px rgba(15, 23, 42, 0.07);
+      --radius: 20px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Inter, Arial, Helvetica, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      min-height: 100vh;
+    }
+
+    aside {
+      background: var(--nav);
+      color: #fff;
+      padding: 26px;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow-y: auto;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 22px;
+      font-weight: 800;
+      margin-bottom: 34px;
+    }
+
+    .mark {
+      width: 38px;
+      height: 38px;
+      border-radius: 14px;
+      background: rgba(255,255,255,0.12);
+      display: grid;
+      place-items: center;
+      border: 1px solid rgba(255,255,255,0.16);
+    }
+
+    .nav-label {
+      color: #94a3b8;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin: 24px 0 10px;
+    }
+
+    .nav-item {
+      display: block;
+      width: 100%;
+      border: 0;
+      text-align: left;
+      cursor: pointer;
+      padding: 13px 14px;
+      border-radius: 14px;
+      margin-bottom: 8px;
+      background: rgba(255,255,255,0.06);
+      color: #e5e7eb;
+      font-weight: 700;
+      font-size: 14px;
+    }
+
+    .nav-item.active,
+    .nav-item:hover {
+      background: rgba(37, 99, 235, 0.95);
+      color: #fff;
+    }
+
+    .side-note {
+      margin-top: 28px;
+      padding: 14px;
+      border-radius: 16px;
+      background: rgba(255,255,255,0.08);
+      color: #cbd5e1;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    main {
+      padding: 32px;
+    }
+
+    .screen {
+      display: none;
+    }
+
+    .screen.active {
+      display: block;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+      margin-bottom: 26px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 32px;
+      letter-spacing: -0.04em;
+    }
+
+    .subtitle {
+      color: var(--muted);
+      margin-top: 7px;
+      line-height: 1.55;
+    }
+
+    .pill {
+      padding: 8px 13px;
+      border-radius: 999px;
+      background: var(--success-bg);
+      color: var(--success);
+      font-weight: 800;
+      font-size: 13px;
+      white-space: nowrap;
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 18px;
+      margin-bottom: 22px;
+    }
+
+    .card,
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 22px;
+      box-shadow: var(--shadow);
+    }
+
+    .card h3 {
+      margin: 0 0 12px;
+      color: var(--muted);
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .value {
+      font-size: 34px;
+      line-height: 1;
+      font-weight: 900;
+      letter-spacing: -0.05em;
+    }
+
+    .danger-text { color: var(--danger); }
+    .warn-text { color: var(--warn); }
+    .success-text { color: var(--success); }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 22px;
+      margin-bottom: 22px;
+    }
+
+    .panel {
+      overflow-x: auto;
+      margin-bottom: 22px;
+    }
+
+    .panel h2 {
+      margin: 0 0 15px;
+      font-size: 20px;
+      letter-spacing: -0.03em;
+    }
+
+    .panel p {
+      color: var(--muted);
+      line-height: 1.55;
+    }
+
+    canvas {
+      width: 100% !important;
+      max-height: 320px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+      min-width: 650px;
+    }
+
+    th, td {
+      padding: 12px;
+      border-bottom: 1px solid #e2e8f0;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      color: #475569;
+      background: #f8fafc;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .badge {
+      padding: 5px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 800;
+      display: inline-block;
+      text-transform: uppercase;
+    }
+
+    .critical { background: var(--critical-bg); color: var(--critical-text); }
+    .high { background: var(--high-bg); color: var(--high-text); }
+    .medium { background: var(--medium-bg); color: var(--medium-text); }
+    .low { background: var(--low-bg); color: var(--low-text); }
+
+    .reference {
+      max-width: 360px;
+      word-break: break-all;
+      color: #334155;
+      font-size: 12px;
+    }
+
+    .graph-box {
+      position: relative;
+      height: 420px;
+      background: #f8fafc;
+      border: 1px dashed #cbd5e1;
+      border-radius: 18px;
+      overflow: hidden;
+    }
+
+    .node {
+      position: absolute;
+      min-width: 95px;
+      padding: 10px 12px;
+      background: #fff;
+      border: 2px solid var(--brand);
+      color: #0f172a;
+      border-radius: 999px;
+      text-align: center;
+      font-weight: 800;
+      font-size: 12px;
+      box-shadow: 0 8px 20px rgba(15, 23, 42, 0.12);
+      z-index: 2;
+    }
+
+    .node.source {
+      border-color: #dc2626;
+      background: #fef2f2;
+    }
+
+    .node.destination {
+      border-color: #16a34a;
+      background: #f0fdf4;
+    }
+
+    .edge {
+      position: absolute;
+      height: 2px;
+      background: #64748b;
+      transform-origin: left center;
+      z-index: 1;
+    }
+
+    .edge::after {
+      content: "";
+      position: absolute;
+      right: -1px;
+      top: -4px;
+      width: 0;
+      height: 0;
+      border-left: 8px solid #64748b;
+      border-top: 5px solid transparent;
+      border-bottom: 5px solid transparent;
+    }
+
+    .empty-graph {
+      padding: 28px;
+      color: var(--muted);
+    }
+
+    .ai-box {
+      background: #eff6ff;
+      border-left: 5px solid var(--brand);
+      padding: 18px;
+      border-radius: 16px;
+      line-height: 1.7;
+    }
+
+    .rule-row,
+    .workflow-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 18px;
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      margin-bottom: 12px;
+      background: #f8fafc;
+    }
+
+    .toggle {
+      width: 46px;
+      height: 25px;
+      background: #2563eb;
+      border-radius: 999px;
+      position: relative;
+      flex-shrink: 0;
+    }
+
+    .toggle::after {
+      content: "";
+      width: 19px;
+      height: 19px;
+      background: white;
+      position: absolute;
+      right: 3px;
+      top: 3px;
+      border-radius: 50%;
+    }
+
+    .demo-console {
+      background: #0f172a;
+      color: #e5e7eb;
+      padding: 18px;
+      border-radius: 16px;
+      font-size: 13px;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .primary-btn {
+      background: var(--brand);
+      color: white;
+      border: none;
+      padding: 12px 16px;
+      border-radius: 14px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .footer {
+      margin-top: 28px;
+      color: var(--muted);
+      font-size: 13px;
+      text-align: center;
+    }
+
+    @media (max-width: 1080px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+
+      aside {
+        position: relative;
+        height: auto;
+      }
+
+      .cards,
+      .grid {
+        grid-template-columns: 1fr;
+      }
+
+      main {
+        padding: 22px;
+      }
+
+      .topbar {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+
+<body>
+<div class="layout">
+
+  <aside>
+    <div class="brand"><span class="mark">G</span> Guardian</div>
+
+    <div class="nav-label">Operations</div>
+    <button class="nav-item active" onclick="showScreen('dashboard', this)">Intelligence Dashboard</button>
+    <button class="nav-item" onclick="showScreen('tenant', this)">Tenant Portal</button>
+    <button class="nav-item" onclick="showScreen('onboard', this)">Onboard Tenant</button>
+
+    <div class="nav-label">Signals</div>
+    <button class="nav-item" onclick="showScreen('fraud-alerts', this)">Fraud Alerts</button>
+    <button class="nav-item" onclick="showScreen('telecom-checks', this)">Telecom Checks</button>
+    <button class="nav-item" onclick="showScreen('kyc', this)">KYC Intelligence</button>
+    <button class="nav-item" onclick="showScreen('aml', this)">AML / NFS Rules</button>
+    <button class="nav-item" onclick="showScreen('network-graph', this)">Network Graph</button>
+
+    <div class="nav-label">Workflows</div>
+    <button class="nav-item" onclick="showScreen('ai', this)">AI Investigator</button>
+    <button class="nav-item" onclick="showScreen('cases', this)">Case Management</button>
+    <button class="nav-item" onclick="showScreen('alerts', this)">Alert Notifications</button>
+    <button class="nav-item" onclick="showScreen('console', this)">Test Console</button>
+
+    <div class="side-note">
+      Full demo dashboard showing telecom checks, KYC signals, AML rules, AI investigation, cases, alerts, and fraud graphing.
+    </div>
+  </aside>
+
+  <main>
+
+    <!-- INTELLIGENCE DASHBOARD -->
+    <section id="dashboard" class="screen active">
+      <div class="topbar">
+        <div>
+          <h1>Guardian Fraud Intelligence</h1>
+          <div class="subtitle">Network-as-Code fraud prevention, AML detection, KYC intelligence, and real-time transaction risk scoring.</div>
+        </div>
+        <span class="pill">Operations View</span>
+      </div>
+
+      <div class="cards">
+        <div class="card"><h3>Total Transactions</h3><div class="value">{{ total_transactions }}</div></div>
+        <div class="card"><h3>Total Fraud Alerts</h3><div class="value">{{ total_fraud_alerts }}</div></div>
+        <div class="card"><h3>Critical Alerts</h3><div class="value danger-text">{{ critical_alerts }}</div></div>
+        <div class="card"><h3>High Alerts</h3><div class="value warn-text">{{ high_alerts }}</div></div>
+      </div>
+
+      <div class="grid">
+        <div class="panel"><h2>Transaction Status</h2><canvas id="statusChart"></canvas></div>
+        <div class="panel"><h2>Risk Levels</h2><canvas id="riskChart"></canvas></div>
+      </div>
+
+      <div class="grid">
+        <div class="panel"><h2>Top Fraud Rules</h2><canvas id="rulesChart"></canvas></div>
+        <div class="panel">
+          <h2>Platform Capability Map</h2>
+          <table>
+            <tr><th>Capability</th><th>Status</th><th>Demo Value</th></tr>
+            <tr><td>CAMARA Telecom Checks</td><td><span class="badge high">Active</span></td><td>SIM swap, device swap, number and location verification</td></tr>
+            <tr><td>KYC Intelligence</td><td><span class="badge medium">Active</span></td><td>KYC match and tenure risk scoring</td></tr>
+            <tr><td>AML / NFS Rules</td><td><span class="badge high">Active</span></td><td>Velocity, high value, one-to-many and many-to-one detection</td></tr>
+            <tr><td>AI Investigator</td><td><span class="badge low">Ready</span></td><td>Human-readable fraud explanation and recommendation</td></tr>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- FRAUD ALERTS -->
+    <section id="fraud-alerts" class="screen">
+      <div class="topbar">
+        <div>
+          <h1>Fraud Alerts</h1>
+          <div class="subtitle">Monitor, triage, and respond to triggered fraud rules.</div>
+        </div>
+        <button class="primary-btn">Export Alerts</button>
+      </div>
+
+      <div class="cards">
+        <div class="card"><h3>Total Alerts</h3><div class="value">{{ total_fraud_alerts }}</div></div>
+        <div class="card"><h3>Critical</h3><div class="value danger-text">{{ critical_alerts }}</div></div>
+        <div class="card"><h3>High</h3><div class="value warn-text">{{ high_alerts }}</div></div>
+        <div class="card"><h3>Medium</h3><div class="value">{{ medium_alerts }}</div></div>
+      </div>
+
+      <div class="panel">
+        <h2>Recent Fraud Alerts</h2>
+        <table>
+          <tr><th>Rule</th><th>Severity</th><th>Score</th><th>Amount</th><th>Status</th><th>Reference</th></tr>
+          {% for alert in recent_alerts %}
+          <tr>
+            <td>{{ alert.rule_code }}</td>
+            <td><span class="badge {{ alert.severity }}">{{ alert.severity }}</span></td>
+            <td>{{ alert.score }}</td>
+            <td>{{ alert.amount }} {{ alert.currency }}</td>
+            <td>{{ alert.status }}</td>
+            <td class="reference">{{ alert.reference }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="6">No recent fraud alerts.</td></tr>
+          {% endfor %}
+        </table>
+      </div>
+    </section>
+
+    <!-- TELECOM CHECKS -->
+    <section id="telecom-checks" class="screen">
+      <div class="topbar">
+        <div>
+          <h1>Telecom Checks</h1>
+          <div class="subtitle">CAMARA/Open Gateway network signals used in fraud scoring.</div>
+        </div>
+        <span class="pill">Network-as-Code Layer</span>
+      </div>
+
+      <div class="panel">
+        <h2>Telecom Signal Summary</h2>
+        <table>
+          <tr><th>Check Type</th><th>Result</th><th>Count</th></tr>
+          {% for signal in telecom_signals %}
+          <tr>
+            <td>{{ signal.check_type }}</td>
+            <td>{{ signal.result }}</td>
+            <td>{{ signal.count }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="3">No telecom signals yet.</td></tr>
+          {% endfor %}
+        </table>
+      </div>
+
+      <div class="panel">
+        <h2>Supported Telecom APIs</h2>
+        <table>
+          <tr><th>API</th><th>Fraud Signal</th><th>Guardian Use</th></tr>
+          <tr><td>Number Verification</td><td>Phone ownership mismatch</td><td>Detects impersonation or account misuse</td></tr>
+          <tr><td>SIM Swap</td><td>Recent SIM replacement</td><td>Blocks account takeover and SIM swap fraud</td></tr>
+          <tr><td>Device Swap</td><td>Device changed recently</td><td>Detects stolen device or suspicious account access</td></tr>
+          <tr><td>Location Verification</td><td>User not near transaction point</td><td>Prevents location-based cash-out fraud</td></tr>
+        </table>
+      </div>
+    </section>
+
+    <!-- KYC -->
+    <section id="kyc" class="screen">
+      <div class="topbar">
+        <div>
+          <h1>KYC Intelligence</h1>
+          <div class="subtitle">Identity assurance layer for AML and fraud prevention.</div>
+        </div>
+        <span class="pill">Identity Layer</span>
+      </div>
+
+      <div class="grid">
+        <div class="panel">
+          <h2>KYC Signals</h2>
+          <table>
+            <tr><th>Signal</th><th>Status</th><th>Score</th><th>Business Value</th></tr>
+            <tr><td>KYC Match</td><td><span class="badge low">Matched</span></td><td>0 / 30</td><td>Prevents impersonation and mule accounts</td></tr>
+            <tr><td>KYC Tenure</td><td><span class="badge low">Normal Tenure</span></td><td>0 / 20</td><td>Detects risky newly created identities</td></tr>
+            <tr><td>KYC Fill-in</td><td><span class="badge medium">Available</span></td><td>Context</td><td>Enriches investigation profiles</td></tr>
+          </table>
+        </div>
+
+        <div class="panel">
+          <h2>Identity Risk Rules</h2>
+          <table>
+            <tr><th>Scenario</th><th>Decision Impact</th></tr>
+            <tr><td>KYC mismatch + high-value transaction</td><td>FLAG / DELAY</td></tr>
+            <tr><td>Low tenure + SIM swap</td><td>DELAY / BLOCK</td></tr>
+            <tr><td>KYC mismatch + device swap</td><td>BLOCK</td></tr>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- AML / NFS -->
+    <section id="aml" class="screen">
+      <div class="topbar">
+        <div>
+          <h1>AML / NFS Rules</h1>
+          <div class="subtitle">Behavioral fraud detection for laundering, mule activity, and abnormal transaction flow.</div>
+        </div>
+        <span class="pill">Rules Engine</span>
+      </div>
+
+      <div class="panel">
+        <h2>Active AML Rules</h2>
+        <table>
+          <tr><th>Rule</th><th>Pattern</th><th>Risk</th><th>Reference Example</th></tr>
+          <tr><td>NFS_ONE_TO_MANY</td><td>One account sends to many destinations</td><td>Money dispersion / mule activity</td><td>NFS-ONE-TO-MANY-...</td></tr>
+          <tr><td>NFS_MANY_TO_ONE</td><td>Many accounts send to one account</td><td>Money aggregation / laundering</td><td>NFS-MANY-TO-ONE-...</td></tr>
+          <tr><td>VELOCITY_SPIKE</td><td>Many transactions in short time</td><td>Bot or coordinated fraud</td><td>AML-VELOCITY-...</td></tr>
+          <tr><td>HIGH_VALUE_TRANSACTION</td><td>Amount exceeds threshold</td><td>High value anomaly</td><td>AML-HIGH-VALUE-...</td></tr>
+          <tr><td>DORMANT_ACCOUNT_ACTIVITY</td><td>Inactive account suddenly transacts</td><td>Account takeover</td><td>AML-DORMANT-...</td></tr>
+        </table>
+      </div>
+    </section>
+
+    <!-- NETWORK GRAPH -->
+    <section id="network-graph" class="screen">
+      <div class="topbar">
+        <div>
+          <h1>Fraud Network Graph</h1>
+          <div class="subtitle">Visualizes one-to-many and many-to-one money movement patterns.</div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="graph-box">
+          {% if graph_edges %}
+            {% for node in graph_nodes %}
+            <div class="node {{ node.type }}" style="left: {{ node.x }}%; top: {{ node.y }}%;" id="node-{{ node.safe_id }}">{{ node.label }}</div>
+            {% endfor %}
+            {% for edge in graph_edges %}
+            <div class="edge" style="left: {{ edge.x }}%; top: {{ edge.y }}%; width: {{ edge.length }}%; transform: rotate({{ edge.angle }}deg);"></div>
+            {% endfor %}
+          {% else %}
+            <div class="empty-graph">No account-flow graph data yet. Send one-to-many or many-to-one transactions to populate this graph.</div>
+          {% endif %}
+        </div>
+      </div>
+    </section>
+
+    <!-- AI INVESTIGATOR -->
+    <section id="ai" class="screen">
+      <div class="topbar">
+        <div>
+          <h1>AI Fraud Investigator</h1>
+          <div class="subtitle">Human-in-the-loop AI explanation for fraud operations teams.</div>
+        </div>
+        <span class="pill">Human Intervention</span>
+      </div>
+
+      <div class="grid">
+        <div class="panel">
+          <h2>AI Investigation Summary</h2>
+          <div class="ai-box">
+            <strong>Guardian AI:</strong><br><br>
+            This transaction should be reviewed because Guardian combines telecom intelligence, KYC signals,
+            AML rules, NFS flow analysis, and transaction behavior to explain fraud decisions.
+            The AI recommends whether to allow, flag, delay, block, escalate, or close a case.
+          </div>
+        </div>
+
+        <div class="panel">
+          <h2>Human Intervention Queue</h2>
+          <table>
+            <tr><th>Action</th><th>Priority</th><th>Status</th></tr>
+            <tr><td>Review blocked transaction</td><td><span class="badge critical">Critical</span></td><td>Pending analyst decision</td></tr>
+            <tr><td>Verify customer identity</td><td><span class="badge high">High</span></td><td>Manual review</td></tr>
+            <tr><td>Confirm SIM swap legitimacy</td><td><span class="badge medium">Medium</span></td><td>Awaiting telco validation</td></tr>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- CASE MANAGEMENT -->
+    <section id="cases" class="screen">
+      <div class="topbar">
+        <div>
+          <h1>Case Management</h1>
+          <div class="subtitle">Fraud workflow from detection to investigation and resolution.</div>
+        </div>
+        <span class="pill">Investigation Workflow</span>
+      </div>
+
+      <div class="panel">
+        <h2>Case Lifecycle</h2>
+        <table>
+          <tr><th>Status</th><th>Description</th><th>Owner</th></tr>
+          <tr><td>Open</td><td>Automatically created after critical fraud detection</td><td>Fraud Ops</td></tr>
+          <tr><td>Under Review</td><td>Analyst reviews AI, telecom, KYC, and AML evidence</td><td>Investigator</td></tr>
+          <tr><td>Escalated</td><td>Moved to compliance or security team</td><td>Compliance</td></tr>
+          <tr><td>Resolved</td><td>Case closed after investigation and documentation</td><td>Fraud Manager</td></tr>
+          <tr><td>False Positive</td><td>Marked safe after manual review</td><td>Fraud Analyst</td></tr>
+        </table>
+      </div>
+    </section>
+
+    <!-- ALERT NOTIFICATIONS -->
+    <section id="alerts" class="screen">
+      <div class="topbar">
+        <div>
+          <h1>Alert Notifications</h1>
+          <div class="subtitle">Operational notifications for fraud teams and connected systems.</div>
+        </div>
+      </div>
+
+      <div class="grid">
+        <div class="panel">
+          <h2>Alert Channels</h2>
+          <table>
+            <tr><th>Channel</th><th>Status</th><th>Purpose</th></tr>
+            <tr><td>Email</td><td><span class="badge low">Sent</span></td><td>Notify fraud operations</td></tr>
+            <tr><td>Webhook</td><td><span class="badge medium">Ready</span></td><td>Integrate with bank/MNO systems</td></tr>
+            <tr><td>SMS</td><td><span class="badge medium">Demo</span></td><td>Notify analyst or customer support</td></tr>
+            <tr><td>Slack</td><td><span class="badge medium">Ready</span></td><td>Fraud operations room notification</td></tr>
+          </table>
+        </div>
+
+        <div class="panel">
+          <h2>Sample Critical Alert</h2>
+          <div class="demo-console">CRITICAL FRAUD ALERT
+
+Transaction blocked.
+Reason: SIM swap + device swap + location mismatch + high-value amount.
+Recommended Action: freeze transaction, escalate to fraud operations, verify customer identity.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TENANT PORTAL -->
+    <section id="tenant" class="screen">
+      <div class="topbar">
+        <div>
+          <h1>Tenant Portal</h1>
+          <div class="subtitle">SaaS view for banks, MNOs, fintechs, and merchants using Guardian APIs.</div>
+        </div>
+      </div>
+
+      <div class="grid">
+        <div class="panel">
+          <h2>Tenant API Credentials</h2>
+          <div class="demo-console">API Key: gdn_live_demo_key
+Secret Key: ••••••••••••••••
+Tenant: Guardian Demo Fintech
+Status: Active</div>
+        </div>
+
+        <div class="panel">
+          <h2>Tenant Capabilities</h2>
+          <table>
+            <tr><th>Feature</th><th>Status</th></tr>
+            <tr><td>Transaction API</td><td><span class="badge low">Enabled</span></td></tr>
+            <tr><td>Fraud Rules</td><td><span class="badge low">Enabled</span></td></tr>
+            <tr><td>Dashboard Access</td><td><span class="badge low">Enabled</span></td></tr>
+            <tr><td>Alert Webhooks</td><td><span class="badge medium">Ready</span></td></tr>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ONBOARD TENANT -->
+    <section id="onboard" class="screen">
+      <div class="topbar">
+        <div>
+          <h1>Onboard Tenant</h1>
+          <div class="subtitle">Create new tenant organizations and generate fraud API credentials.</div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>Demo Onboarding Flow</h2>
+        <table>
+          <tr><th>Step</th><th>Description</th></tr>
+          <tr><td>1</td><td>Register fintech, bank, MNO, merchant, or wallet provider</td></tr>
+          <tr><td>2</td><td>Generate API key and secret</td></tr>
+          <tr><td>3</td><td>Send transactions to Guardian</td></tr>
+          <tr><td>4</td><td>Monitor fraud decisions and alerts from dashboard</td></tr>
+        </table>
+      </div>
+    </section>
+
+    <!-- TEST CONSOLE -->
+    <section id="console" class="screen">
+      <div class="topbar">
+        <div>
+          <h1>Test Transaction Console</h1>
+          <div class="subtitle">Demonstrates safe and risky transaction requests for judges.</div>
+        </div>
+      </div>
+
+      <div class="grid">
+        <div class="panel">
+          <h2>Safe Transaction</h2>
+          <div class="demo-console">{
+  "customer_msisdn": "260977000111",
+  "source_account": "ACC001",
+  "destination_account": "ACC999",
+  "amount": "1000.00",
+  "txn_type": "transfer",
+  "device_id": "DEVICE-123",
+  "latitude": -15.3875,
+  "longitude": 28.3228
+}</div>
+        </div>
+
+        <div class="panel">
+          <h2>Fraud Transaction</h2>
+          <div class="demo-console">{
+  "customer_msisdn": "260977000999",
+  "source_account": "ACC-FRAUD-001",
+  "destination_account": "ACC-MULE-999",
+  "amount": "25000.00",
+  "txn_type": "transfer",
+  "device_id": "DEVICE-NEW",
+  "latitude": -17.0,
+  "longitude": 30.0
+}</div>
+        </div>
+      </div>
+    </section>
+
+    <div class="footer">Guardian • Telecom-Fintech Fraud Intelligence Platform</div>
+
+  </main>
+</div>
+
+<script>
+  function showScreen(screenId, button) {
+    document.querySelectorAll(".screen").forEach(screen => {
+      screen.classList.remove("active");
+    });
+
+    document.getElementById(screenId).classList.add("active");
+
+    document.querySelectorAll(".nav-item").forEach(item => {
+      item.classList.remove("active");
+    });
+
+    button.classList.add("active");
+  }
+
+  const statusLabels = JSON.parse('{{ chart_status_labels|escapejs }}');
+  const statusValues = JSON.parse('{{ chart_status_values|escapejs }}');
+
+  const riskLabels = JSON.parse('{{ chart_risk_labels|escapejs }}');
+  const riskValues = JSON.parse('{{ chart_risk_values|escapejs }}');
+
+  const ruleLabels = JSON.parse('{{ chart_rule_labels|escapejs }}');
+  const ruleValues = JSON.parse('{{ chart_rule_values|escapejs }}');
+
+  new Chart(document.getElementById("statusChart"), {
+    type: "doughnut",
+    data: {
+      labels: statusLabels,
+      datasets: [{ data: statusValues }]
+    },
+    options: {
+      plugins: {
+        legend: { position: "bottom" }
+      }
+    }
+  });
+
+  new Chart(document.getElementById("riskChart"), {
+    type: "bar",
+    data: {
+      labels: riskLabels,
+      datasets: [{
+        label: "Risk Assessments",
+        data: riskValues
+      }]
+    },
+    options: {
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: { precision: 0 }
+        }
+      },
+      plugins: {
+        legend: { display: false }
+      }
+    }
+  });
+
+  new Chart(document.getElementById("rulesChart"), {
+    type: "bar",
+    data: {
+      labels: ruleLabels,
+      datasets: [{
+        label: "Triggered Count",
+        data: ruleValues
+      }]
+    },
+    options: {
+      indexAxis: "y",
+      scales: {
+        x: {
+          beginAtZero: true,
+          ticks: { precision: 0 }
+        }
+      },
+      plugins: {
+        legend: { display: false }
+      }
+    }
+  });
+</script>
+
+</body>
+</html>

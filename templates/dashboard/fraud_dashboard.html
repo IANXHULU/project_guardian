@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Guardian | Tenant Fraud Dashboard</title>
+  <style>
+    :root {
+      --bg: #f5f7fb;
+      --surface: #ffffff;
+      --ink: #101828;
+      --muted: #667085;
+      --line: #e4e7ec;
+      --brand: #1d4ed8;
+      --nav: #0f172a;
+      --success: #027a48;
+      --success-bg: #ecfdf3;
+      --warn: #b54708;
+      --warn-bg: #fffaeb;
+      --danger: #b42318;
+      --danger-bg: #fef3f2;
+      --shadow: 0 14px 36px rgba(15, 23, 42, 0.07);
+      --radius: 20px;
+    }
+
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: Inter, Arial, Helvetica, sans-serif; background: var(--bg); color: var(--ink); }
+    a { color: inherit; text-decoration: none; }
+
+    .layout { display: grid; grid-template-columns: 280px 1fr; min-height: 100vh; }
+    aside { background: var(--nav); color: #fff; padding: 26px; position: sticky; top: 0; height: 100vh; }
+    .brand { display: flex; align-items: center; gap: 12px; font-size: 22px; font-weight: 800; margin-bottom: 34px; }
+    .mark { width: 38px; height: 38px; border-radius: 14px; background: rgba(255,255,255,0.12); display: grid; place-items: center; border: 1px solid rgba(255,255,255,0.16); }
+    .nav-label { color: #94a3b8; font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; margin: 26px 0 10px; }
+    .nav-item { display: block; padding: 13px 14px; border-radius: 14px; margin-bottom: 8px; background: rgba(255,255,255,0.06); color: #e5e7eb; font-weight: 700; }
+    .nav-item.active, .nav-item:hover { background: rgba(37, 99, 235, 0.95); color: #fff; }
+    .side-note { margin-top: 30px; padding: 14px; border-radius: 16px; background: rgba(255,255,255,0.08); color: #cbd5e1; font-size: 13px; line-height: 1.5; }
+
+    main { padding: 32px; }
+    .topbar { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 26px; }
+    h1 { margin: 0; font-size: 32px; letter-spacing: -0.04em; }
+    .tenant { color: var(--muted); margin-top: 6px; }
+    .pill { padding: 8px 13px; border-radius: 999px; background: var(--success-bg); color: var(--success); font-weight: 800; font-size: 13px; text-transform: capitalize; }
+
+    .stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; margin-bottom: 22px; }
+    .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 22px; box-shadow: var(--shadow); }
+    .label { color: var(--muted); font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 10px; }
+    .value { font-size: 34px; line-height: 1; font-weight: 900; letter-spacing: -0.05em; }
+    .success { color: var(--success); }
+    .warn { color: var(--warn); }
+    .danger { color: var(--danger); }
+
+    .section { display: grid; grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr); gap: 18px; margin-bottom: 22px; }
+    h2 { margin: 0 0 14px; font-size: 20px; letter-spacing: -0.03em; }
+    p { color: var(--muted); line-height: 1.55; }
+    pre { background: #0f172a; color: #e5e7eb; padding: 16px; border-radius: 16px; overflow-x: auto; font-size: 12px; line-height: 1.55; white-space: pre-wrap; word-break: break-word; }
+    .credential { margin-bottom: 14px; }
+    .muted-small { color: var(--muted); font-size: 13px; }
+
+    input { width: 100%; padding: 13px 14px; border: 1px solid #d0d5dd; border-radius: 14px; margin-bottom: 10px; font-size: 14px; outline: none; }
+    input:focus { border-color: var(--brand); box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.10); }
+    .actions { display: flex; gap: 10px; flex-wrap: wrap; margin: 8px 0 14px; }
+    button { padding: 12px 15px; border: none; border-radius: 14px; background: var(--brand); color: #fff; font-weight: 800; cursor: pointer; }
+    button.secondary { background: #475467; }
+    button.danger-btn { background: #dc2626; }
+    button:hover { filter: brightness(0.95); }
+
+    .empty { display: none; padding: 18px; border-radius: 16px; background: var(--warn-bg); color: var(--warn); border: 1px solid #fedf89; margin-bottom: 18px; }
+
+    @media (max-width: 980px) {
+      .layout { grid-template-columns: 1fr; }
+      aside { position: relative; height: auto; }
+      .stats, .section { grid-template-columns: 1fr; }
+      main { padding: 22px; }
+      .topbar { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <aside>
+      <div class="brand"><span class="mark">G</span> Guardian</div>
+      <div class="nav-label">Tenant Portal</div>
+      <a class="nav-item active" href="/api/v1/dashboard/fraud/">Fraud Overview</a>
+      <a class="nav-item" href="/api/v1/dashboard/onboard/">Onboard New Tenant</a>
+      <a class="nav-item" href="/api/v1/dashboard/guardian/">Operations Dashboard</a>
+      <div class="nav-label">Workflow</div>
+      <div class="nav-item">API Console</div>
+      <div class="nav-item">Test Transactions</div>
+      <div class="nav-item">Review Queue</div>
+      <div class="side-note">Use the generated API key and secret to authenticate every transaction request.</div>
+    </aside>
+
+    <main>
+      <div id="missingCredentials" class="empty">
+        No tenant credentials found in this browser. Please onboard a tenant first.
+        <br><br><a href="/api/v1/dashboard/onboard/"><strong>Go to onboarding →</strong></a>
+      </div>
+
+      <div class="topbar">
+        <div>
+          <h1>Tenant Fraud Dashboard</h1>
+          <div class="tenant" id="tenantName">Loading tenant...</div>
+        </div>
+        <span class="pill" id="integrationStatus">Checking</span>
+      </div>
+
+      <div class="stats">
+        <div class="card"><div class="label">Total Transactions</div><div class="value" id="totalTransactions">0</div></div>
+        <div class="card"><div class="label">Approved</div><div class="value success" id="approvedCount">0</div></div>
+        <div class="card"><div class="label">Flagged</div><div class="value warn" id="flaggedCount">0</div></div>
+        <div class="card"><div class="label">Blocked</div><div class="value danger" id="blockedCount">0</div></div>
+      </div>
+
+      <div class="section">
+        <div class="card">
+          <h2>API Credentials</h2>
+          <p class="muted-small">The secret is masked by the backend for safety. The full secret remains in browser storage after onboarding.</p>
+          <div class="label">API Key</div>
+          <pre class="credential" id="apiKey">Loading...</pre>
+          <div class="label">Secret Key</div>
+          <pre class="credential" id="secretKey">Loading...</pre>
+          <div class="actions">
+            <button onclick="loadConsole()">Refresh</button>
+            <button class="secondary" onclick="clearCredentials()">Clear Local Keys</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>Send Test Transaction</h2>
+          <input id="customer_msisdn" placeholder="Customer MSISDN" value="260977000111" />
+          <input id="source_account" placeholder="Source Account" value="ACC001" />
+          <input id="destination_account" placeholder="Destination Account" value="ACC999" />
+          <input id="amount" placeholder="Amount" value="1000.00" />
+          <input id="device_id" placeholder="Device ID" value="DEVICE-123" />
+          <div class="actions">
+            <button onclick="sendTestTransaction()">Send Safe Transaction</button>
+            <button class="danger-btn" onclick="sendFraudTransaction()">Send Fraud Test</button>
+          </div>
+          <pre id="transactionResult">No transaction sent yet.</pre>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Sample Integration Request</h2>
+        <pre id="sampleRequest">Loading...</pre>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const API_BASE = `${window.location.origin}/api/v1`;
+    const apiKey = localStorage.getItem("guardian_api_key");
+    const secretKey = localStorage.getItem("guardian_secret_key");
+
+    function authHeaders() {
+      return {
+        "X-Guardian-API-Key": apiKey,
+        "X-Guardian-Secret": secretKey
+      };
+    }
+
+    function showMissingCredentials() {
+      document.getElementById("missingCredentials").style.display = "block";
+      document.getElementById("tenantName").innerText = "No tenant connected";
+      document.getElementById("integrationStatus").innerText = "not connected";
+    }
+
+    async function loadConsole() {
+      if (!apiKey || !secretKey) {
+        showMissingCredentials();
+        return;
+      }
+
+      try {
+        const response = await fetch(`${API_BASE}/onboarding/developer-console/`, {
+          method: "GET",
+          headers: authHeaders()
+        });
+        const data = await response.json();
+        if (!response.ok) throw data;
+
+        document.getElementById("tenantName").innerText = `${data.tenant.name} • ${data.tenant.id}`;
+        document.getElementById("integrationStatus").innerText = data.integration_status.status.replaceAll("_", " ");
+        document.getElementById("totalTransactions").innerText = data.usage.total_transactions;
+        document.getElementById("approvedCount").innerText = data.usage.approved;
+        document.getElementById("flaggedCount").innerText = data.usage.flagged;
+        document.getElementById("blockedCount").innerText = data.usage.blocked;
+        document.getElementById("apiKey").innerText = data.api_credentials.api_key || "Unavailable";
+        document.getElementById("secretKey").innerText = data.api_credentials.secret_key || "Unavailable";
+        document.getElementById("sampleRequest").innerText = JSON.stringify(data.sample_request, null, 2);
+      } catch (error) {
+        document.getElementById("transactionResult").innerText = "Dashboard load failed:\n" + JSON.stringify(error, null, 2);
+      }
+    }
+
+    async function sendTransaction(payload) {
+      if (!apiKey || !secretKey) {
+        showMissingCredentials();
+        return;
+      }
+
+      const result = document.getElementById("transactionResult");
+      result.innerText = "Sending transaction...";
+
+      try {
+        const response = await fetch(`${API_BASE}/transactions/`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...authHeaders()
+          },
+          body: JSON.stringify(payload)
+        });
+        const data = await response.json();
+        result.innerText = JSON.stringify(data, null, 2);
+        await loadConsole();
+      } catch (error) {
+        result.innerText = "Transaction failed:\n" + JSON.stringify(error, null, 2);
+      }
+    }
+
+    function sendTestTransaction() {
+      sendTransaction({
+        customer_msisdn: document.getElementById("customer_msisdn").value.trim(),
+        source_account: document.getElementById("source_account").value.trim(),
+        destination_account: document.getElementById("destination_account").value.trim(),
+        amount: document.getElementById("amount").value.trim(),
+        currency: "ZMW",
+        txn_type: "transfer",
+        device_id: document.getElementById("device_id").value.trim(),
+        agent_id: "AGENT-01",
+        latitude: -15.3875,
+        longitude: 28.3228
+      });
+    }
+
+    function sendFraudTransaction() {
+      sendTransaction({
+        customer_msisdn: "260977000999",
+        source_account: "ACC-FRAUD-001",
+        destination_account: "ACC-MULE-999",
+        amount: "25000.00",
+        currency: "ZMW",
+        txn_type: "transfer",
+        device_id: "DEVICE-NEW",
+        agent_id: "AGENT-01",
+        latitude: -17.0,
+        longitude: 30.0
+      });
+    }
+
+    function clearCredentials() {
+      localStorage.removeItem("guardian_api_key");
+      localStorage.removeItem("guardian_secret_key");
+      localStorage.removeItem("guardian_tenant_name");
+      localStorage.removeItem("guardian_tenant_id");
+      window.location.href = "/api/v1/dashboard/onboard/";
+    }
+
+    loadConsole();
+  </script>
+</body>
+</html>
